@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyCast — Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400&display=swap"
+    rel="stylesheet"
+  />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="scene" id="scene" aria-hidden="true">
+    <div class="orb orb--a"></div>
+    <div class="orb orb--b"></div>
+    <div class="orb orb--c"></div>
+    <canvas class="particles-canvas" id="particlesCanvas"></canvas>
+    <div class="grain"></div>
+  </div>
+
+  <div class="shell">
+
+      <header class="header">
+      <div class="logo">
+        <span class="logo-text">SkyCast</span>
+      </div>
+      <div class="header-actions">
+        <button class="hbtn" id="unitToggle" aria-label="Toggle °C/°F">
+          <span id="unitLabel">°C</span>
+        </button>
+        <button class="hbtn hbtn--icon" id="themeToggle" aria-label="Toggle theme">
+          <i data-lucide="sun"></i>
+        </button>
+        <button class="hbtn hbtn--icon" id="settingsBtn" aria-label="Open settings">
+          <i data-lucide="sliders-horizontal"></i>
+        </button>
+      </div>
+    </header>
+
+      <div class="search-zone">
+      <div class="search-box" role="search">
+        <span class="search-ico"><i data-lucide="search"></i></span>
+        <input
+          id="searchInput"
+          class="search-input"
+          type="search"
+          placeholder="Search city…"
+          autocomplete="off"
+          aria-label="Search for a city"
+          aria-expanded="false"
+          aria-autocomplete="list"
+          role="combobox"
+        />
+        <button id="searchClear" class="search-x" aria-label="Clear" style="display:none">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="search-dropdown" id="searchDropdown" role="listbox">
+        <div id="dropdownInner"></div>
+      </div>
+    </div>
+
+      <div class="fav-strip" id="favStrip"></div>
+
+  
+    <!-- View: Loading skeleton -->
+    <div class="view view--loading" id="viewLoading">
+      <div class="skel-hero">
+        <div class="skel skel--city"></div>
+        <div class="skel skel--temp"></div>
+        <div class="skel skel--desc"></div>
+        <div class="skel-row">
+          <div class="skel skel--stat"></div>
+          <div class="skel skel--stat"></div>
+          <div class="skel skel--stat"></div>
+        </div>
+      </div>
+      <div class="skel skel--block"></div>
+      <div class="skel skel--block"></div>
+    </div>
+
+    <!-- View: Error -->
+    <div class="view view--error" id="viewError" style="display:none" role="alert">
+      <div class="err-card">
+        <div class="err-icon"><i data-lucide="wifi-off"></i></div>
+        <h2 class="err-title">Connection lost</h2>
+        <p class="err-body" id="errMsg">We couldn't reach the weather service. Check your connection.</p>
+        <button class="retry-btn" id="retryBtn">
+          <i data-lucide="refresh-cw"></i>
+          Try again
+        </button>
+      </div>
+    </div>
+
+    <!-- View: Weather -->
+    <div class="view view--weather" id="viewWeather" style="display:none">
+
+      <!-- Big hero -->
+      <section class="hero" aria-label="Current conditions">
+        <div class="hero-top">
+          <div class="hero-location">
+            <i data-lucide="map-pin"></i>
+            <span id="heroCity">—</span>
+            <span class="hero-country" id="heroCountry"></span>
+          </div>
+          <button class="fav-toggle" id="favToggle" aria-label="Toggle favorite">
+            <i data-lucide="heart"></i>
+          </button>
+        </div>
+
+        <div class="hero-main">
+          <div class="hero-left">
+            <div class="hero-temp-wrap">
+              <span class="hero-temp" id="heroTemp">—</span>
+              <sup class="hero-deg" id="heroDeg">°C</sup>
+            </div>
+            <p class="hero-cond" id="heroCond">—</p>
+            <p class="hero-feels" id="heroFeels">Feels like —</p>
+          </div>
+          <div class="hero-icon-wrap" id="heroIconWrap">
+            <i data-lucide="cloud-sun" class="hero-weather-icon"></i>
+          </div>
+        </div>
+
+        <div class="hero-stats" role="list">
+          <div class="hstat" role="listitem">
+            <i data-lucide="wind"></i>
+            <div class="hstat-body">
+              <span class="hstat-val" id="statWind">—</span>
+              <span class="hstat-lbl" id="statWindUnit">km/h</span>
+            </div>
+            <span class="hstat-name">Wind</span>
+          </div>
+          <div class="hstat" role="listitem">
+            <i data-lucide="droplets"></i>
+            <div class="hstat-body">
+              <span class="hstat-val" id="statHumid">—</span>
+              <span class="hstat-lbl">%</span>
+            </div>
+            <span class="hstat-name">Humidity</span>
+          </div>
+          <div class="hstat" role="listitem">
+            <i data-lucide="eye"></i>
+            <div class="hstat-body">
+              <span class="hstat-val" id="statVis">—</span>
+              <span class="hstat-lbl">km</span>
+            </div>
+            <span class="hstat-name">Visibility</span>
+          </div>
+          <div class="hstat" role="listitem">
+            <i data-lucide="gauge"></i>
+            <div class="hstat-body">
+              <span class="hstat-val" id="statPres">—</span>
+              <span class="hstat-lbl">hPa</span>
+            </div>
+            <span class="hstat-name">Pressure</span>
+          </div>
+        </div>
+
+        <!-- Sunrise/Sunset -->
+        <div class="sun-band" aria-label="Sunrise and sunset times">
+          <div class="sun-end">
+            <i data-lucide="sunrise"></i>
+            <div>
+              <div class="sun-time" id="sunriseT">—</div>
+              <div class="sun-lbl">Sunrise</div>
+            </div>
+          </div>
+          <div class="sun-track">
+            <div class="sun-fill" id="sunFill"></div>
+            <div class="sun-ball" id="sunBall"></div>
+          </div>
+          <div class="sun-end sun-end--right">
+            <i data-lucide="sunset"></i>
+            <div>
+              <div class="sun-time" id="sunsetT">—</div>
+              <div class="sun-lbl">Sunset</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Hourly -->
+      <section class="section" aria-label="Hourly forecast">
+        <h2 class="section-title">Next 24 Hours</h2>
+        <div class="hourly-rail" id="hourlyRail" aria-label="Hourly forecast scroll"></div>
+      </section>
+
+      <!-- UV + Detail mini cards -->
+      <section class="section detail-section" aria-label="Weather details">
+        <h2 class="section-title">Conditions</h2>
+        <div class="detail-grid">
+          <div class="dcard dcard--uv">
+            <div class="dcard-label"><i data-lucide="sun"></i> UV Index</div>
+            <div class="dcard-val" id="dUV">—</div>
+            <div class="dcard-sub" id="dUVlabel">—</div>
+            <div class="uv-bar">
+              <div class="uv-track"></div>
+              <div class="uv-cursor" id="uvCursor"></div>
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-label"><i data-lucide="cloud-rain"></i> Precip</div>
+            <div class="dcard-val" id="dPrecip">—</div>
+            <div class="dcard-sub">mm / 24h</div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-label"><i data-lucide="navigation"></i> Wind dir</div>
+            <div class="dcard-val" id="dWindDir">—</div>
+            <div class="dcard-sub" id="dWindSpeed">—</div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-label"><i data-lucide="thermometer"></i> Dew point</div>
+            <div class="dcard-val" id="dDew">—</div>
+            <div class="dcard-sub">°<span id="dDewUnit">C</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7-Day -->
+      <section class="section" aria-label="7-day forecast">
+        <h2 class="section-title">7-Day Forecast</h2>
+        <div class="week-list" id="weekList"></div>
+      </section>
+
+    </div>
+
+    <!-- View: Settings -->
+    <div class="view view--settings" id="viewSettings" style="display:none">
+      <div class="settings-pane">
+        <h2 class="pane-title">Settings</h2>
+
+        <div class="setting-group">
+          <div class="setting-row">
+            <div class="setting-meta">
+              <div class="setting-name">Temperature unit</div>
+              <div class="setting-hint">Display in Celsius or Fahrenheit</div>
+            </div>
+            <div class="seg" role="group" aria-label="Temperature unit">
+              <button class="seg-btn active" id="setC">°C</button>
+              <button class="seg-btn" id="setF">°F</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-meta">
+              <div class="setting-name">Appearance</div>
+              <div class="setting-hint">Choose your preferred theme</div>
+            </div>
+            <div class="seg" role="group" aria-label="Theme">
+              <button class="seg-btn" id="setLight">Light</button>
+              <button class="seg-btn active" id="setDark">Dark</button>
+              <button class="seg-btn" id="setSystem">Auto</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-meta">
+              <div class="setting-name">Particle effects</div>
+              <div class="setting-hint">Animated rain, snow &amp; atmosphere</div>
+            </div>
+            <label class="switch" aria-label="Toggle particle effects">
+              <input type="checkbox" id="animSwitch" checked />
+              <span class="switch-track">
+                <span class="switch-thumb"></span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-row setting-row--info">
+            <span class="setting-name">Data source</span>
+            <span class="pill">WeatherAPI.com</span>
+          </div>
+          <div class="setting-row setting-row--info">
+            <span class="setting-name">Mode</span>
+            <span class="pill pill--live">Live</span>
+          </div>
+          <div class="setting-row setting-row--info">
+            <span class="setting-name">Version</span>
+            <span class="pill">1.0.0</span>
+          </div>
+        </div>
+
+        <div class="setting-note">
+          Live weather data provided by <a href="https://www.weatherapi.com" target="_blank" rel="noopener">WeatherAPI.com</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Favorites -->
+    <div class="view view--favs" id="viewFavs" style="display:none">
+      <div class="favs-pane">
+        <h2 class="pane-title">Saved Cities</h2>
+        <div id="favsContent"></div>
+      </div>
+    </div>
+
+  </div>
+  <!-- /shell -->
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <div class="nav-inner">
+      <button class="nav-btn active" data-view="weather" aria-label="Today's weather">
+        <i data-lucide="cloud-sun"></i>
+        <span>Today</span>
+      </button>
+      <button class="nav-btn" data-view="search" aria-label="Search">
+        <i data-lucide="search"></i>
+        <span>Search</span>
+      </button>
+      <button class="nav-btn" data-view="favs" aria-label="Saved cities">
+        <i data-lucide="heart"></i>
+        <span>Saved</span>
+      </button>
+      <button class="nav-btn" data-view="settings" aria-label="Settings">
+        <i data-lucide="sliders-horizontal"></i>
+        <span>Settings</span>
+      </button>
+    </div>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
